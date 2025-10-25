@@ -7,7 +7,7 @@ const DEV_API_URL = 'http://localhost:3000/api';
 // Para produção (Render)
 // Substitua pela URL do seu backend no Render após o deploy!
 // Exemplo: 'https://ecotrack-backend.onrender.com/api'
-const PROD_API_URL = 'https://SEU-APP-AQUI.onrender.com/api';
+const PROD_API_URL = 'https://ecotrack-qllt.onrender.com/';
 
 // Detecta automaticamente o ambiente
 const API_URL = window.location.hostname === 'localhost' 
