@@ -1,6 +1,6 @@
 // Configuração da API
 // URL do backend no Render
-const PROD_API_URL = 'https://ecotrack-backend-zy4n.onrender.com/api';
+const PROD_API_URL = 'https://ecotrack-backend-3315.onrender.com/api';
 
 // URL para desenvolvimento local
 const DEV_API_URL = 'http://localhost:3000/api';
