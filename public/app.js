@@ -1,6 +1,41 @@
 // ==================== CONFIGURAÇÃO ==================== 
 // A URL da API agora vem do config.js (carregado antes deste arquivo)
 
+// ==================== FUNÇÕES DE MENSAGEM (BONITAS) ==================== 
+function mostrarMensagem(texto, tipo) {
+    const mensagemDiv = document.getElementById('mensagem');
+    
+    // Remove classes anteriores
+    mensagemDiv.className = '';
+    
+    // Adiciona a classe do tipo (sucesso ou erro)
+    mensagemDiv.classList.add(tipo);
+    
+    // Define o texto
+    mensagemDiv.innerHTML = `
+        ${texto}
+        <button class="btn-fechar" onclick="fecharMensagem()">×</button>
+    `;
+    
+    // Mostra a mensagem
+    mensagemDiv.style.display = 'block';
+    
+    // Auto-fechar após 5 segundos
+    setTimeout(() => {
+        fecharMensagem();
+    }, 5000);
+}
+
+function fecharMensagem() {
+    const mensagemDiv = document.getElementById('mensagem');
+    mensagemDiv.style.animation = 'slideOutRight 0.3s ease-out';
+    
+    setTimeout(() => {
+        mensagemDiv.style.display = 'none';
+        mensagemDiv.style.animation = '';
+    }, 300);
+}
+
 // ==================== NAVEGAÇÃO ==================== 
 document.addEventListener('DOMContentLoaded', () => {
     // Configurar navegação
@@ -213,13 +248,49 @@ function renderListaColetas(coletas) {
 async function handleColetaSubmit(e) {
     e.preventDefault();
     
+    // Capturar valores dos campos com trim()
+    const tipo = document.getElementById('tipo').value.trim();
+    const quantidade = document.getElementById('quantidade').value.trim();
+    const unidade = document.getElementById('unidade').value.trim();
+    const pontoId = document.getElementById('pontoId').value.trim();
+    const observacoes = document.getElementById('observacoes').value.trim();
+    
+    console.log('Valores capturados:', { tipo, quantidade, unidade, pontoId, observacoes });
+    
+    // Validação detalhada
+    if (!tipo) {
+        mostrarMensagem('Por favor, selecione o tipo de material', 'erro');
+        document.getElementById('tipo').focus();
+        return;
+    }
+    
+    if (!quantidade || parseFloat(quantidade) <= 0) {
+        mostrarMensagem('Por favor, informe uma quantidade válida', 'erro');
+        document.getElementById('quantidade').focus();
+        return;
+    }
+    
+    if (!unidade) {
+        mostrarMensagem('Por favor, selecione a unidade', 'erro');
+        document.getElementById('unidade').focus();
+        return;
+    }
+    
+    if (!pontoId) {
+        mostrarMensagem('Por favor, selecione um ponto de coleta', 'erro');
+        document.getElementById('pontoId').focus();
+        return;
+    }
+    
     const coletaData = {
-        tipo: document.getElementById('tipo').value,
-        quantidade: parseFloat(document.getElementById('quantidade').value),
-        unidade: document.getElementById('unidade').value,
-        pontoId: parseInt(document.getElementById('pontoId').value),
-        observacoes: document.getElementById('observacoes').value
+        tipo: tipo,
+        quantidade: parseFloat(quantidade),
+        unidade: unidade,
+        pontoId: parseInt(pontoId),
+        observacoes: observacoes
     };
+    
+    console.log('Enviando para API:', coletaData);
     
     try {
         const response = await fetch(`${API_URL}/coletas`, {
@@ -231,24 +302,25 @@ async function handleColetaSubmit(e) {
         });
         
         const result = await response.json();
+        console.log('Resposta da API:', result);
         
-        if (result.success) {
-            alert('✅ Coleta registrada com sucesso!');
+        if (response.ok && result.success) {
+            mostrarMensagem('✓ Coleta registrada com sucesso!', 'sucesso');
             document.getElementById('coletaForm').reset();
             esconderFormColeta();
             carregarColetas();
-            carregarDashboard();
+            atualizarDashboard();
         } else {
-            alert('❌ Erro: ' + result.message);
+            mostrarMensagem(`Erro: ${result.message || 'Não foi possível registrar a coleta'}`, 'erro');
         }
     } catch (error) {
         console.error('Erro ao registrar coleta:', error);
-        alert('❌ Erro ao registrar coleta');
+        mostrarMensagem('Erro de conexão com o servidor. Verifique se o backend está rodando.', 'erro');
     }
 }
 
 async function deletarColeta(id) {
-    if (!confirm('Deseja realmente excluir esta coleta?')) {
+    if (!confirm('Tem certeza que deseja excluir esta coleta?')) {
         return;
     }
     
@@ -260,15 +332,15 @@ async function deletarColeta(id) {
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ Coleta excluída com sucesso!');
+            mostrarMensagem('✓ Coleta excluída com sucesso!', 'sucesso');
             carregarColetas();
-            carregarDashboard();
+            atualizarDashboard();
         } else {
-            alert('❌ Erro: ' + result.message);
+            mostrarMensagem('Erro ao excluir coleta: ' + result.message, 'erro');
         }
     } catch (error) {
         console.error('Erro ao excluir coleta:', error);
-        alert('❌ Erro ao excluir coleta');
+        mostrarMensagem('Erro ao excluir coleta', 'erro');
     }
 }
 
@@ -354,10 +426,34 @@ function renderPontos(pontos) {
 async function handlePontoSubmit(e) {
     e.preventDefault();
     
+    // Capturar valores com trim()
+    const nome = document.getElementById('nomePonto').value.trim();
+    const endereco = document.getElementById('enderecoPonto').value.trim();
+    const tipo = document.getElementById('tipoPonto').value.trim();
+    
+    // Validação
+    if (!nome) {
+        mostrarMensagem('Por favor, informe o nome do ponto', 'erro');
+        document.getElementById('nomePonto').focus();
+        return;
+    }
+    
+    if (!endereco) {
+        mostrarMensagem('Por favor, informe o endereço', 'erro');
+        document.getElementById('enderecoPonto').focus();
+        return;
+    }
+    
+    if (!tipo) {
+        mostrarMensagem('Por favor, informe os tipos aceitos', 'erro');
+        document.getElementById('tipoPonto').focus();
+        return;
+    }
+    
     const pontoData = {
-        nome: document.getElementById('nomePonto').value,
-        endereco: document.getElementById('enderecoPonto').value,
-        tipo: document.getElementById('tipoPonto').value
+        nome: nome,
+        endereco: endereco,
+        tipo: tipo
     };
     
     try {
@@ -372,16 +468,16 @@ async function handlePontoSubmit(e) {
         const result = await response.json();
         
         if (result.success) {
-            alert('✅ Ponto cadastrado com sucesso!');
+            mostrarMensagem('✓ Ponto cadastrado com sucesso!', 'sucesso');
             document.getElementById('pontoForm').reset();
             esconderFormPonto();
             carregarPontos();
         } else {
-            alert('❌ Erro: ' + result.message);
+            mostrarMensagem('Erro: ' + result.message, 'erro');
         }
     } catch (error) {
         console.error('Erro ao cadastrar ponto:', error);
-        alert('❌ Erro ao cadastrar ponto');
+        mostrarMensagem('Erro ao cadastrar ponto', 'erro');
     }
 }
 
@@ -404,7 +500,7 @@ async function gerarRelatorio() {
         }
     } catch (error) {
         console.error('Erro ao gerar relatório:', error);
-        alert('❌ Erro ao gerar relatório');
+        mostrarMensagem('Erro ao gerar relatório', 'erro');
     }
 }
 
@@ -473,7 +569,7 @@ function renderRelatorio(dados) {
 
 // ==================== UTILITÁRIOS ==================== 
 function mostrarErro(mensagem) {
-    alert('❌ ' + mensagem);
+    mostrarMensagem('❌ ' + mensagem, 'erro');
 }
 
 function mostrarErroConexao() {

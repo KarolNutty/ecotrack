@@ -500,3 +500,113 @@ footer {
         font-size: 1.5rem;
     }
 }
+
+/* ========== MELHORIAS NAS MENSAGENS ========== */
+
+/* Container de mensagens - topo fixo */
+#mensagem {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    max-width: 400px;
+    padding: 16px 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    z-index: 9999;
+    display: none;
+    animation: slideInRight 0.3s ease-out;
+    font-weight: 500;
+    font-size: 15px;
+}
+
+/* Animação de entrada */
+@keyframes slideInRight {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+/* Animação de saída */
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+/* Mensagem de sucesso */
+#mensagem.sucesso {
+    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+    color: white;
+    border-left: 5px solid #2e7d32;
+}
+
+/* Mensagem de erro */
+#mensagem.erro {
+    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+    color: white;
+    border-left: 5px solid #c62828;
+}
+
+/* Ícone na mensagem */
+#mensagem::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    vertical-align: middle;
+}
+
+#mensagem.sucesso::before {
+    content: '✓';
+    font-size: 20px;
+    font-weight: bold;
+}
+
+#mensagem.erro::before {
+    content: '✕';
+    font-size: 18px;
+    font-weight: bold;
+}
+
+/* Botão fechar mensagem */
+#mensagem .btn-fechar {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: rgba(255,255,255,0.3);
+    border: none;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    transition: background 0.2s;
+}
+
+#mensagem .btn-fechar:hover {
+    background: rgba(255,255,255,0.5);
+}
+
+/* Responsivo para mobile */
+@media (max-width: 768px) {
+    #mensagem {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+        font-size: 14px;
+    }
+}
