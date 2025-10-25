@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoTrack - Sistema de Gestão Ambiental</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <nav class="navbar">
+            <div class="container">
+                <div class="logo">
+                    <span class="logo-icon">🌱</span>
+                    <h1>EcoTrack</h1>
+                </div>
+                <ul class="nav-menu">
+                    <li><a href="#dashboard" class="active">Dashboard</a></li>
+                    <li><a href="#coletas">Coletas</a></li>
+                    <li><a href="#pontos">Pontos</a></li>
+                    <li><a href="#relatorios">Relatórios</a></li>
+                </ul>
+            </div>
+        </nav>
+    </header>
+
+    <main class="container">
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="section active">
+            <div class="section-header">
+                <h2>Dashboard Ambiental</h2>
+                <button class="btn btn-primary" onclick="atualizarDashboard()">
+                    🔄 Atualizar
+                </button>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-info">
+                        <h3 id="totalColetas">0</h3>
+                        <p>Total de Coletas</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">⚖️</div>
+                    <div class="stat-info">
+                        <h3 id="totalQuantidade">0 kg</h3>
+                        <p>Material Coletado</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">📍</div>
+                    <div class="stat-info">
+                        <h3 id="totalPontos">0</h3>
+                        <p>Pontos de Coleta</p>
+                    </div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-icon">🌍</div>
+                    <div class="stat-info">
+                        <h3 id="co2Evitado">0 kg</h3>
+                        <p>CO₂ Evitado</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <div class="card">
+                    <h3>Coletas por Tipo</h3>
+                    <div id="coletasPorTipo" class="chart-container">
+                        <p class="loading">Carregando dados...</p>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Últimas Coletas</h3>
+                    <div id="ultimasColetas" class="table-container">
+                        <p class="loading">Carregando dados...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card impact-card">
+                <h3>🌳 Impacto Ambiental</h3>
+                <div class="impact-stats">
+                    <div class="impact-item">
+                        <span class="impact-icon">🌲</span>
+                        <div>
+                            <strong id="arvoresEquivalentes">0</strong>
+                            <p>Árvores preservadas</p>
+                        </div>
+                    </div>
+                    <div class="impact-item">
+                        <span class="impact-icon">⚡</span>
+                        <div>
+                            <strong id="energiaEconomizada">0 kWh</strong>
+                            <p>Energia economizada</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Coletas Section -->
+        <section id="coletas" class="section">
+            <div class="section-header">
+                <h2>Gerenciar Coletas</h2>
+                <button class="btn btn-primary" onclick="mostrarFormColeta()">
+                    ➕ Nova Coleta
+                </button>
+            </div>
+
+            <div id="formColeta" class="card form-card" style="display: none;">
+                <h3>Registrar Nova Coleta</h3>
+                <form id="coletaForm">
+                    <div class="form-group">
+                        <label for="tipo">Tipo de Material *</label>
+                        <select id="tipo" required>
+                            <option value="">Selecione...</option>
+                            <option value="Papel">Papel</option>
+                            <option value="Plástico">Plástico</option>
+                            <option value="Metal">Metal</option>
+                            <option value="Vidro">Vidro</option>
+                            <option value="Eletrônicos">Eletrônicos</option>
+                            <option value="Orgânicos">Orgânicos</option>
+                        </select>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="quantidade">Quantidade *</label>
+                            <input type="number" id="quantidade" step="0.1" min="0" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="unidade">Unidade</label>
+                            <select id="unidade">
+                                <option value="kg">kg</option>
+                                <option value="ton">toneladas</option>
+                                <option value="unidade">unidades</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="pontoId">Ponto de Coleta *</label>
+                        <select id="pontoId" required>
+                            <option value="">Selecione...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="observacoes">Observações</label>
+                        <textarea id="observacoes" rows="3"></textarea>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="esconderFormColeta()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Registrar Coleta
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="card">
+                <h3>Histórico de Coletas</h3>
+                <div id="listaColetas" class="table-responsive">
+                    <p class="loading">Carregando coletas...</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Pontos Section -->
+        <section id="pontos" class="section">
+            <div class="section-header">
+                <h2>Pontos de Coleta</h2>
+                <button class="btn btn-primary" onclick="mostrarFormPonto()">
+                    ➕ Novo Ponto
+                </button>
+            </div>
+
+            <div id="formPonto" class="card form-card" style="display: none;">
+                <h3>Cadastrar Novo Ponto</h3>
+                <form id="pontoForm">
+                    <div class="form-group">
+                        <label for="nomePonto">Nome do Ponto *</label>
+                        <input type="text" id="nomePonto" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="enderecoPonto">Endereço *</label>
+                        <input type="text" id="enderecoPonto" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="tipoPonto">Tipos Aceitos</label>
+                        <input type="text" id="tipoPonto" placeholder="Ex: Papel, Plástico, Metal">
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="esconderFormPonto()">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            Cadastrar Ponto
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="pontos-grid" id="pontosList">
+                <p class="loading">Carregando pontos...</p>
+            </div>
+        </section>
+
+        <!-- Relatórios Section -->
+        <section id="relatorios" class="section">
+            <div class="section-header">
+                <h2>Relatórios</h2>
+                <button class="btn btn-primary" onclick="gerarRelatorio()">
+                    📄 Gerar Relatório Mensal
+                </button>
+            </div>
+
+            <div class="card">
+                <h3>Relatório do Mês</h3>
+                <div id="relatorioMensal">
+                    <p class="info">Clique no botão acima para gerar o relatório mensal</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>🌱 EcoTrack - Sistema de Gestão Ambiental | Desenvolvido para promover a sustentabilidade</p>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
