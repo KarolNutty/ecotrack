@@ -10,7 +10,6 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(cors());
 app.use(bodyParser.json());
-app.use(express.static('public'));
 
 // Banco de dados em memória (simulação)
 let coletas = [];
@@ -38,8 +37,18 @@ let nextUsuarioId = 1;
 // ==================== ROTAS DA API ====================
 
 // Rota principal
+// Rota raiz - apenas para verificar se API está rodando
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.json({
+    message: 'EcoTrack API está rodando! 🌱',
+    version: '1.0.0',
+    endpoints: {
+      health: '/api/health',
+      coletas: '/api/coletas',
+      pontos: '/api/pontos',
+      dashboard: '/api/dashboard'
+    }
+  });
 });
 
 // ==================== COLETAS ====================
