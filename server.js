@@ -36,8 +36,7 @@ let nextUsuarioId = 1;
 
 // ==================== ROTAS DA API ====================
 
-// Rota principal
-// Rota raiz - apenas para verificar se API está rodando
+// Rota principal - info da API
 app.get('/', (req, res) => {
   res.json({
     message: 'EcoTrack API está rodando! 🌱',
