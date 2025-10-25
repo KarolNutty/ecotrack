@@ -31,3 +31,6 @@ Thumbs.db
 # Temporários
 *.tmp
 .cache/
+
+ecotrack.db
+*.db

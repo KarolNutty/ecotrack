@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const path = require('path');
+const { db, all, get, run } = require('./database');
 require('dotenv').config();
 
 const app = express();
@@ -10,265 +11,274 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static('public'));
 
-// Banco de dados em memória (simulação)
-let coletas = [];
-let pontos = [
-  {
-    id: 1,
-    nome: "EcoPonto Centro",
-    endereco: "Rua das Flores, 123 - Centro",
-    tipo: "Papel, Plástico, Metal",
-    status: "ativo"
-  },
-  {
-    id: 2,
-    nome: "EcoPonto Bairro Verde",
-    endereco: "Av. Sustentável, 456 - Bairro Verde",
-    tipo: "Vidro, Eletrônicos, Orgânicos",
-    status: "ativo"
-  }
-];
-let usuarios = [];
-let nextColetaId = 1;
-let nextPontoId = 3;
-let nextUsuarioId = 1;
+// ==================== ROTAS DE COLETAS ====================
 
-// ==================== ROTAS DA API ====================
-
-// Rota principal - info da API
-app.get('/', (req, res) => {
-  res.json({
-    message: 'EcoTrack API está rodando! 🌱',
-    version: '1.0.0',
-    endpoints: {
-      health: '/api/health',
-      coletas: '/api/coletas',
-      pontos: '/api/pontos',
-      dashboard: '/api/dashboard'
+// GET - Listar todas as coletas
+app.get('/api/coletas', async (req, res) => {
+    try {
+        const coletas = await all('SELECT * FROM coletas ORDER BY data DESC');
+        res.json({
+            success: true,
+            data: coletas
+        });
+    } catch (error) {
+        console.error('Erro ao buscar coletas:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar coletas'
+        });
     }
-  });
 });
 
-// ==================== COLETAS ====================
+// POST - Criar nova coleta
+app.post('/api/coletas', async (req, res) => {
+    try {
+        const { data, tipo_material, quantidade, ponto_coleta } = req.body;
+        
+        // Validação
+        if (!data || !tipo_material || !quantidade || !ponto_coleta) {
+            return res.status(400).json({
+                success: false,
+                message: 'Todos os campos são obrigatórios'
+            });
+        }
 
-// Listar todas as coletas
-app.get('/api/coletas', (req, res) => {
-  res.json({
-    success: true,
-    data: coletas,
-    total: coletas.length
-  });
-});
+        const result = await run(
+            'INSERT INTO coletas (data, tipo_material, quantidade, ponto_coleta) VALUES (?, ?, ?, ?)',
+            [data, tipo_material, quantidade, ponto_coleta]
+        );
 
-// Buscar coleta por ID
-app.get('/api/coletas/:id', (req, res) => {
-  const coleta = coletas.find(c => c.id === parseInt(req.params.id));
-  
-  if (!coleta) {
-    return res.status(404).json({
-      success: false,
-      message: 'Coleta não encontrada'
-    });
-  }
-  
-  res.json({
-    success: true,
-    data: coleta
-  });
-});
-
-// Criar nova coleta
-app.post('/api/coletas', (req, res) => {
-  const { tipo, quantidade, unidade, pontoId, observacoes } = req.body;
-  
-  if (!tipo || !quantidade || !pontoId) {
-    return res.status(400).json({
-      success: false,
-      message: 'Campos obrigatórios: tipo, quantidade, pontoId'
-    });
-  }
-  
-  const novaColeta = {
-    id: nextColetaId++,
-    tipo,
-    quantidade: parseFloat(quantidade),
-    unidade: unidade || 'kg',
-    pontoId: parseInt(pontoId),
-    observacoes: observacoes || '',
-    data: new Date().toISOString(),
-    status: 'registrada'
-  };
-  
-  coletas.push(novaColeta);
-  
-  res.status(201).json({
-    success: true,
-    message: 'Coleta registrada com sucesso',
-    data: novaColeta
-  });
-});
-
-// Atualizar coleta
-app.put('/api/coletas/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = coletas.findIndex(c => c.id === id);
-  
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: 'Coleta não encontrada'
-    });
-  }
-  
-  coletas[index] = {
-    ...coletas[index],
-    ...req.body,
-    id: id
-  };
-  
-  res.json({
-    success: true,
-    message: 'Coleta atualizada com sucesso',
-    data: coletas[index]
-  });
-});
-
-// Deletar coleta
-app.delete('/api/coletas/:id', (req, res) => {
-  const id = parseInt(req.params.id);
-  const index = coletas.findIndex(c => c.id === id);
-  
-  if (index === -1) {
-    return res.status(404).json({
-      success: false,
-      message: 'Coleta não encontrada'
-    });
-  }
-  
-  coletas.splice(index, 1);
-  
-  res.json({
-    success: true,
-    message: 'Coleta removida com sucesso'
-  });
-});
-
-// ==================== PONTOS DE COLETA ====================
-
-// Listar todos os pontos
-app.get('/api/pontos', (req, res) => {
-  res.json({
-    success: true,
-    data: pontos
-  });
-});
-
-// Criar novo ponto
-app.post('/api/pontos', (req, res) => {
-  const { nome, endereco, tipo } = req.body;
-  
-  if (!nome || !endereco) {
-    return res.status(400).json({
-      success: false,
-      message: 'Campos obrigatórios: nome, endereco'
-    });
-  }
-  
-  const novoPonto = {
-    id: nextPontoId++,
-    nome,
-    endereco,
-    tipo: tipo || 'Todos os tipos',
-    status: 'ativo'
-  };
-  
-  pontos.push(novoPonto);
-  
-  res.status(201).json({
-    success: true,
-    message: 'Ponto de coleta criado com sucesso',
-    data: novoPonto
-  });
-});
-
-// ==================== ESTATÍSTICAS ====================
-
-// Dashboard com estatísticas
-app.get('/api/dashboard', (req, res) => {
-  const totalColetas = coletas.length;
-  const totalQuantidade = coletas.reduce((sum, c) => sum + c.quantidade, 0);
-  
-  const coletasPorTipo = coletas.reduce((acc, c) => {
-    acc[c.tipo] = (acc[c.tipo] || 0) + c.quantidade;
-    return acc;
-  }, {});
-  
-  const ultimasColetas = coletas
-    .sort((a, b) => new Date(b.data) - new Date(a.data))
-    .slice(0, 5);
-  
-  res.json({
-    success: true,
-    data: {
-      totalColetas,
-      totalQuantidade: totalQuantidade.toFixed(2),
-      totalPontos: pontos.length,
-      coletasPorTipo,
-      ultimasColetas,
-      impactoAmbiental: {
-        co2Evitado: (totalQuantidade * 2.5).toFixed(2),
-        arvoresEquivalentes: Math.floor(totalQuantidade / 10),
-        energiaEconomizada: (totalQuantidade * 3.2).toFixed(2)
-      }
+        res.status(201).json({
+            success: true,
+            message: 'Coleta registrada com sucesso!',
+            data: {
+                id: result.id,
+                data,
+                tipo_material,
+                quantidade,
+                ponto_coleta
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao criar coleta:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao registrar coleta'
+        });
     }
-  });
 });
 
-// ==================== RELATÓRIOS ====================
+// PUT - Atualizar coleta
+app.put('/api/coletas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { data, tipo_material, quantidade, ponto_coleta } = req.body;
 
-// Gerar relatório mensal
-app.get('/api/relatorios/mensal', (req, res) => {
-  const mesAtual = new Date().getMonth();
-  const coletasMes = coletas.filter(c => {
-    const dataColeta = new Date(c.data);
-    return dataColeta.getMonth() === mesAtual;
-  });
-  
-  const totalMes = coletasMes.reduce((sum, c) => sum + c.quantidade, 0);
-  
-  res.json({
-    success: true,
-    data: {
-      mes: mesAtual + 1,
-      ano: new Date().getFullYear(),
-      totalColetas: coletasMes.length,
-      totalQuantidade: totalMes.toFixed(2),
-      detalhes: coletasMes
+        const result = await run(
+            'UPDATE coletas SET data = ?, tipo_material = ?, quantidade = ?, ponto_coleta = ? WHERE id = ?',
+            [data, tipo_material, quantidade, ponto_coleta, id]
+        );
+
+        if (result.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Coleta não encontrada'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Coleta atualizada com sucesso!'
+        });
+    } catch (error) {
+        console.error('Erro ao atualizar coleta:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao atualizar coleta'
+        });
     }
-  });
 });
 
-// Health check
+// DELETE - Remover coleta
+app.delete('/api/coletas/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const result = await run('DELETE FROM coletas WHERE id = ?', [id]);
+
+        if (result.changes === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Coleta não encontrada'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Coleta removida com sucesso!'
+        });
+    } catch (error) {
+        console.error('Erro ao deletar coleta:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao remover coleta'
+        });
+    }
+});
+
+// ==================== ROTAS DE PONTOS ====================
+
+// GET - Listar pontos
+app.get('/api/pontos', async (req, res) => {
+    try {
+        const pontos = await all('SELECT * FROM pontos');
+        res.json({
+            success: true,
+            data: pontos
+        });
+    } catch (error) {
+        console.error('Erro ao buscar pontos:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao buscar pontos'
+        });
+    }
+});
+
+// POST - Criar novo ponto
+app.post('/api/pontos', async (req, res) => {
+    try {
+        const { nome, endereco, tipo } = req.body;
+
+        if (!nome || !endereco || !tipo) {
+            return res.status(400).json({
+                success: false,
+                message: 'Todos os campos são obrigatórios'
+            });
+        }
+
+        const result = await run(
+            'INSERT INTO pontos (nome, endereco, tipo, status) VALUES (?, ?, ?, ?)',
+            [nome, endereco, tipo, 'ativo']
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Ponto criado com sucesso!',
+            data: {
+                id: result.id,
+                nome,
+                endereco,
+                tipo,
+                status: 'ativo'
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao criar ponto:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao criar ponto'
+        });
+    }
+});
+
+// ==================== DASHBOARD ====================
+
+app.get('/api/dashboard', async (req, res) => {
+    try {
+        const coletas = await all('SELECT * FROM coletas');
+        
+        const totalColetas = coletas.length;
+        const totalQuantidade = coletas.reduce((sum, c) => sum + parseFloat(c.quantidade || 0), 0);
+
+        // Cálculos de impacto ambiental
+        const co2Economizado = (totalQuantidade * 2.5).toFixed(2);
+        const arvoresPreservadas = Math.floor(totalQuantidade / 10);
+        const energiaEconomizada = (totalQuantidade * 1.8).toFixed(2);
+
+        res.json({
+            success: true,
+            data: {
+                totalColetas,
+                totalQuantidade: totalQuantidade.toFixed(2),
+                co2Economizado,
+                arvoresPreservadas,
+                energiaEconomizada,
+                ultimasColetas: coletas.slice(0, 5)
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao gerar dashboard:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao carregar dashboard'
+        });
+    }
+});
+
+// ==================== RELATÓRIO ====================
+
+app.get('/api/relatorio', async (req, res) => {
+    try {
+        const hoje = new Date();
+        const mesAtual = hoje.getMonth() + 1;
+        const anoAtual = hoje.getFullYear();
+
+        // Buscar coletas do mês atual
+        const coletas = await all(`
+            SELECT * FROM coletas 
+            WHERE strftime('%m', data) = ? 
+            AND strftime('%Y', data) = ?
+        `, [mesAtual.toString().padStart(2, '0'), anoAtual.toString()]);
+
+        const totalMes = coletas.reduce((sum, c) => sum + parseFloat(c.quantidade || 0), 0);
+
+        res.json({
+            success: true,
+            data: {
+                mes: mesAtual,
+                ano: anoAtual,
+                totalColetas: coletas.length,
+                totalQuantidade: totalMes.toFixed(2),
+                detalhes: coletas
+            }
+        });
+    } catch (error) {
+        console.error('Erro ao gerar relatório:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Erro ao gerar relatório'
+        });
+    }
+});
+
+// ==================== HEALTH CHECK ====================
+
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'OK',
-    timestamp: new Date().toISOString(),
-    uptime: process.uptime()
-  });
+    res.json({
+        status: 'OK',
+        database: 'SQLite - Conectado',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
 });
 
-// Tratamento de erros
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({
-    success: false,
-    message: 'Erro interno do servidor'
-  });
+// ==================== ERRO 404 ====================
+
+app.use((req, res) => {
+    res.status(404).json({
+        success: false,
+        message: 'Rota não encontrada'
+    });
 });
 
-// Iniciar servidor
+// ==================== INICIAR SERVIDOR ====================
+
 app.listen(PORT, () => {
-  console.log(`🌱 EcoTrack rodando em http://localhost:${PORT}`);
-  console.log(`📊 API disponível em http://localhost:${PORT}/api`);
+    console.log(`🌱 EcoTrack rodando em http://localhost:${PORT}`);
+    console.log(`📊 API disponível em http://localhost:${PORT}/api`);
+    console.log(`🗄️  Banco de dados: SQLite (ecotrack.db)`);
+    console.log(`✅ Dados serão persistidos localmente!`);
 });
