@@ -501,112 +501,133 @@ footer {
     }
 }
 
-/* ========== MELHORIAS NAS MENSAGENS ========== */
-
-/* Container de mensagens - topo fixo */
-#mensagem {
+/* ==================== SISTEMA DE NOTIFICAÇÕES (TOAST) ==================== */
+.toast-container {
     position: fixed;
     top: 20px;
     right: 20px;
-    max-width: 400px;
-    padding: 16px 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
     z-index: 9999;
-    display: none;
-    animation: slideInRight 0.3s ease-out;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.toast {
+    min-width: 300px;
+    padding: 16px 20px;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease-out;
+    font-size: 14px;
     font-weight: 500;
-    font-size: 15px;
 }
 
-/* Animação de entrada */
-@keyframes slideInRight {
-    from {
-        transform: translateX(400px);
-        opacity: 0;
-    }
-    to {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-/* Animação de saída */
-@keyframes slideOutRight {
-    from {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    to {
-        transform: translateX(400px);
-        opacity: 0;
-    }
-}
-
-/* Mensagem de sucesso */
-#mensagem.sucesso {
-    background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+.toast.success {
+    background: #10b981;
     color: white;
-    border-left: 5px solid #2e7d32;
 }
 
-/* Mensagem de erro */
-#mensagem.erro {
-    background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+.toast.erro {
+    background: #ef4444;
     color: white;
-    border-left: 5px solid #c62828;
 }
 
-/* Ícone na mensagem */
-#mensagem::before {
-    content: '';
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    margin-right: 10px;
-    vertical-align: middle;
+.toast.info {
+    background: #3b82f6;
+    color: white;
 }
 
-#mensagem.sucesso::before {
-    content: '✓';
+.toast-icon {
     font-size: 20px;
-    font-weight: bold;
+    flex-shrink: 0;
 }
 
-#mensagem.erro::before {
-    content: '✕';
-    font-size: 18px;
-    font-weight: bold;
+.toast-message {
+    flex: 1;
 }
 
-/* Botão fechar mensagem */
-#mensagem .btn-fechar {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: rgba(255,255,255,0.3);
+.toast-close {
+    background: none;
     border: none;
     color: white;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
+    font-size: 20px;
     cursor: pointer;
-    font-size: 16px;
-    line-height: 1;
-    transition: background 0.2s;
+    padding: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.8;
+    transition: opacity 0.2s;
 }
 
-#mensagem .btn-fechar:hover {
-    background: rgba(255,255,255,0.5);
+.toast-close:hover {
+    opacity: 1;
 }
 
-/* Responsivo para mobile */
-@media (max-width: 768px) {
-    #mensagem {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-        max-width: none;
-        font-size: 14px;
+@keyframes slideIn {
+    from {
+        transform: translateX(400px);
+        opacity: 0;
     }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideOut {
+    from {
+        transform: translateX(0);
+        opacity: 1;
+    }
+    to {
+        transform: translateX(400px);
+        opacity: 0;
+    }
+}
+
+.toast.hiding {
+    animation: slideOut 0.3s ease-in;
+}
+
+/* ==================== BOTÃO COM LOADING ==================== */
+.btn.loading {
+    position: relative;
+    color: transparent !important;
+    pointer-events: none;
+    cursor: not-allowed;
+}
+
+.btn.loading::after {
+    content: "";
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    top: 50%;
+    left: 50%;
+    margin-left: -8px;
+    margin-top: -8px;
+    border: 2px solid transparent;
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* ==================== FORMULÁRIO DESABILITADO ==================== */
+form.is-submitting {
+    opacity: 0.6;
+    pointer-events: none;
+}
+
+form.is-submitting * {
+    cursor: not-allowed !important;
 }

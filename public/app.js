@@ -1,39 +1,73 @@
 // ==================== CONFIGURAÇÃO ==================== 
 // A URL da API agora vem do config.js (carregado antes deste arquivo)
 
-// ==================== FUNÇÕES DE MENSAGEM (BONITAS) ==================== 
-function mostrarMensagem(texto, tipo) {
-    const mensagemDiv = document.getElementById('mensagem');
-    
-    // Remove classes anteriores
-    mensagemDiv.className = '';
-    
-    // Adiciona a classe do tipo (sucesso ou erro)
-    mensagemDiv.classList.add(tipo);
-    
-    // Define o texto
-    mensagemDiv.innerHTML = `
-        ${texto}
-        <button class="btn-fechar" onclick="fecharMensagem()">×</button>
-    `;
-    
-    // Mostra a mensagem
-    mensagemDiv.style.display = 'block';
-    
-    // Auto-fechar após 5 segundos
-    setTimeout(() => {
-        fecharMensagem();
-    }, 5000);
+// ==================== SISTEMA DE NOTIFICAÇÕES (NOVO) ==================== 
+
+function criarToastContainer() {
+    let container = document.querySelector('.toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.className = 'toast-container';
+        document.body.appendChild(container);
+    }
+    return container;
 }
 
-function fecharMensagem() {
-    const mensagemDiv = document.getElementById('mensagem');
-    mensagemDiv.style.animation = 'slideOutRight 0.3s ease-out';
+function mostrarNotificacao(mensagem, tipo = 'success') {
+    const container = criarToastContainer();
+    
+    const toast = document.createElement('div');
+    toast.className = `toast ${tipo}`;
+    
+    const icones = {
+        success: '✓',
+        erro: '✕',
+        info: 'ℹ'
+    };
+    
+    toast.innerHTML = `
+        <span class="toast-icon">${icones[tipo] || '✓'}</span>
+        <span class="toast-message">${mensagem}</span>
+        <button class="toast-close" onclick="fecharToast(this)">×</button>
+    `;
+    
+    container.appendChild(toast);
     
     setTimeout(() => {
-        mensagemDiv.style.display = 'none';
-        mensagemDiv.style.animation = '';
-    }, 300);
+        fecharToast(toast.querySelector('.toast-close'));
+    }, 4000);
+}
+
+function fecharToast(botao) {
+    const toast = botao.closest('.toast');
+    if (toast) {
+        toast.classList.add('hiding');
+        setTimeout(() => toast.remove(), 300);
+    }
+}
+
+function mostrarSucesso(mensagem) {
+    mostrarNotificacao(mensagem, 'success');
+}
+
+function mostrarErro(mensagem) {
+    mostrarNotificacao(mensagem, 'erro');
+}
+
+function mostrarInfo(mensagem) {
+    mostrarNotificacao(mensagem, 'info');
+}
+
+function bloquearFormulario(form, botaoSubmit) {
+    form.classList.add('is-submitting');
+    botaoSubmit.classList.add('loading');
+    botaoSubmit.disabled = true;
+}
+
+function desbloquearFormulario(form, botaoSubmit) {
+    form.classList.remove('is-submitting');
+    botaoSubmit.classList.remove('loading');
+    botaoSubmit.disabled = false;
 }
 
 // ==================== NAVEGAÇÃO ==================== 
@@ -248,74 +282,80 @@ function renderListaColetas(coletas) {
 async function handleColetaSubmit(e) {
     e.preventDefault();
     
-    // Capturar valores dos campos com trim()
-    const tipo = document.getElementById('tipo').value.trim();
-    const quantidade = document.getElementById('quantidade').value.trim();
-    const unidade = document.getElementById('unidade').value.trim();
-    const pontoId = document.getElementById('pontoId').value.trim();
-    const observacoes = document.getElementById('observacoes').value.trim();
+    const form = e.target;
+    const botaoSubmit = form.querySelector('button[type="submit"]');
     
-    console.log('Valores capturados:', { tipo, quantidade, unidade, pontoId, observacoes });
-    
-    // Validação detalhada
-    if (!tipo) {
-        mostrarMensagem('Por favor, selecione o tipo de material', 'erro');
-        document.getElementById('tipo').focus();
-        return;
-    }
-    
-    if (!quantidade || parseFloat(quantidade) <= 0) {
-        mostrarMensagem('Por favor, informe uma quantidade válida', 'erro');
-        document.getElementById('quantidade').focus();
-        return;
-    }
-    
-    if (!unidade) {
-        mostrarMensagem('Por favor, selecione a unidade', 'erro');
-        document.getElementById('unidade').focus();
-        return;
-    }
-    
-    if (!pontoId) {
-        mostrarMensagem('Por favor, selecione um ponto de coleta', 'erro');
-        document.getElementById('pontoId').focus();
-        return;
-    }
-    
-    const coletaData = {
-        tipo: tipo,
-        quantidade: parseFloat(quantidade),
-        unidade: unidade,
-        pontoId: parseInt(pontoId),
-        observacoes: observacoes
-    };
-    
-    console.log('Enviando para API:', coletaData);
+    // BLOQUEAR formulário imediatamente
+    bloquearFormulario(form, botaoSubmit);
+    mostrarInfo('Registrando coleta...');
     
     try {
+        const tipo = document.getElementById('tipo').value.trim();
+        const quantidade = document.getElementById('quantidade').value.trim();
+        const unidade = document.getElementById('unidade').value.trim();
+        const pontoId = document.getElementById('pontoId').value.trim();
+        const observacoes = document.getElementById('observacoes').value.trim();
+        
+        // Validação
+        if (!tipo) {
+            mostrarErro('Selecione o tipo de material');
+            document.getElementById('tipo').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        if (!quantidade || parseFloat(quantidade) <= 0) {
+            mostrarErro('Informe uma quantidade válida');
+            document.getElementById('quantidade').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        if (!unidade) {
+            mostrarErro('Selecione a unidade');
+            document.getElementById('unidade').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        if (!pontoId) {
+            mostrarErro('Selecione um ponto de coleta');
+            document.getElementById('pontoId').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        const coletaData = {
+            tipo,
+            quantidade: parseFloat(quantidade),
+            unidade,
+            pontoId: parseInt(pontoId),
+            observacoes
+        };
+        
         const response = await fetch(`${API_URL}/coletas`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(coletaData)
         });
         
         const result = await response.json();
-        console.log('Resposta da API:', result);
         
         if (response.ok && result.success) {
-            mostrarMensagem('✓ Coleta registrada com sucesso!', 'sucesso');
-            document.getElementById('coletaForm').reset();
+            mostrarSucesso('✓ Coleta registrada com sucesso!');
+            form.reset();
             esconderFormColeta();
             carregarColetas();
             atualizarDashboard();
         } else {
-            mostrarMensagem(`Erro: ${result.message || 'Não foi possível registrar a coleta'}`, 'erro');
+            mostrarErro(result.message || 'Erro ao registrar coleta');
+            desbloquearFormulario(form, botaoSubmit);
         }
+        
     } catch (error) {
-        console.error('Erro ao registrar coleta:', error);
-        mostrarMensagem('Erro de conexão com o servidor. Verifique se o backend está rodando.', 'erro');
+        console.error('❌ Erro:', error);
+        mostrarErro('Erro de conexão. Servidor está rodando?');
+        desbloquearFormulario(form, botaoSubmit);
     }
 }
 
@@ -323,6 +363,8 @@ async function deletarColeta(id) {
     if (!confirm('Tem certeza que deseja excluir esta coleta?')) {
         return;
     }
+    
+    mostrarInfo('Removendo coleta...');
     
     try {
         const response = await fetch(`${API_URL}/coletas/${id}`, {
@@ -332,15 +374,15 @@ async function deletarColeta(id) {
         const result = await response.json();
         
         if (result.success) {
-            mostrarMensagem('✓ Coleta excluída com sucesso!', 'sucesso');
+            mostrarSucesso('✓ Coleta removida com sucesso!');
             carregarColetas();
             atualizarDashboard();
         } else {
-            mostrarMensagem('Erro ao excluir coleta: ' + result.message, 'erro');
+            mostrarErro('Erro ao excluir coleta');
         }
     } catch (error) {
-        console.error('Erro ao excluir coleta:', error);
-        mostrarMensagem('Erro ao excluir coleta', 'erro');
+        console.error('❌ Erro:', error);
+        mostrarErro('Erro ao excluir coleta');
     }
 }
 
@@ -426,58 +468,61 @@ function renderPontos(pontos) {
 async function handlePontoSubmit(e) {
     e.preventDefault();
     
-    // Capturar valores com trim()
-    const nome = document.getElementById('nomePonto').value.trim();
-    const endereco = document.getElementById('enderecoPonto').value.trim();
-    const tipo = document.getElementById('tipoPonto').value.trim();
+    const form = e.target;
+    const botaoSubmit = form.querySelector('button[type="submit"]');
     
-    // Validação
-    if (!nome) {
-        mostrarMensagem('Por favor, informe o nome do ponto', 'erro');
-        document.getElementById('nomePonto').focus();
-        return;
-    }
-    
-    if (!endereco) {
-        mostrarMensagem('Por favor, informe o endereço', 'erro');
-        document.getElementById('enderecoPonto').focus();
-        return;
-    }
-    
-    if (!tipo) {
-        mostrarMensagem('Por favor, informe os tipos aceitos', 'erro');
-        document.getElementById('tipoPonto').focus();
-        return;
-    }
-    
-    const pontoData = {
-        nome: nome,
-        endereco: endereco,
-        tipo: tipo
-    };
+    bloquearFormulario(form, botaoSubmit);
+    mostrarInfo('Cadastrando ponto...');
     
     try {
+        const nome = document.getElementById('nomePonto').value.trim();
+        const endereco = document.getElementById('enderecoPonto').value.trim();
+        const tipo = document.getElementById('tipoPonto').value.trim();
+        
+        if (!nome) {
+            mostrarErro('Informe o nome do ponto');
+            document.getElementById('nomePonto').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        if (!endereco) {
+            mostrarErro('Informe o endereço');
+            document.getElementById('enderecoPonto').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        if (!tipo) {
+            mostrarErro('Informe os tipos aceitos');
+            document.getElementById('tipoPonto').focus();
+            desbloquearFormulario(form, botaoSubmit);
+            return;
+        }
+        
+        const pontoData = { nome, endereco, tipo };
+        
         const response = await fetch(`${API_URL}/pontos`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(pontoData)
         });
         
         const result = await response.json();
         
         if (result.success) {
-            mostrarMensagem('✓ Ponto cadastrado com sucesso!', 'sucesso');
-            document.getElementById('pontoForm').reset();
+            mostrarSucesso('✓ Ponto cadastrado com sucesso!');
+            form.reset();
             esconderFormPonto();
             carregarPontos();
         } else {
-            mostrarMensagem('Erro: ' + result.message, 'erro');
+            mostrarErro(result.message || 'Erro ao cadastrar ponto');
+            desbloquearFormulario(form, botaoSubmit);
         }
+        
     } catch (error) {
-        console.error('Erro ao cadastrar ponto:', error);
-        mostrarMensagem('Erro ao cadastrar ponto', 'erro');
+        mostrarErro('Erro de conexão');
+        desbloquearFormulario(form, botaoSubmit);
     }
 }
 
@@ -500,7 +545,7 @@ async function gerarRelatorio() {
         }
     } catch (error) {
         console.error('Erro ao gerar relatório:', error);
-        mostrarMensagem('Erro ao gerar relatório', 'erro');
+        mostrarErro('Erro ao gerar relatório');
     }
 }
 
@@ -568,9 +613,6 @@ function renderRelatorio(dados) {
 }
 
 // ==================== UTILITÁRIOS ==================== 
-function mostrarErro(mensagem) {
-    mostrarMensagem('❌ ' + mensagem, 'erro');
-}
 
 function mostrarErroConexao() {
     const containers = ['coletasPorTipo', 'ultimasColetas'];
@@ -583,7 +625,7 @@ function mostrarErroConexao() {
                     <h3 style="color: #ef4444; margin-bottom: 0.5rem;">Erro de Conexão</h3>
                     <p style="color: #6b7280;">Não foi possível conectar ao servidor.</p>
                     <p style="color: #6b7280; margin-top: 0.5rem;">Certifique-se de que o servidor está rodando:</p>
-                    <code style="background: #f3f4f6; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; margin-top: 0.5rem;">npm start</code>
+                    ode style="background: #f3f4f6; padding: 0.5rem 1rem; border-radius: 4px; display: inline-block; margin-top: 0 0.5rem;">npm start</code>
                 </div>
             `;
         }
